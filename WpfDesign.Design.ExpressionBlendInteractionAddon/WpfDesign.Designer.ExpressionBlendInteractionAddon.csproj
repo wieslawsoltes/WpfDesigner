@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>net45;net5.0-windows;net6.0-windows</TargetFrameworks>
+    <TargetFrameworks>net472;net5.0-windows;net6.0-windows</TargetFrameworks>
 	<UseWPF>true</UseWPF>
 	<AssemblyName>ICSharpCode.WpfDesign.Designer.ExpressionBlendInteractionAddon</AssemblyName>
 	<RootNamespace>ICSharpCode.WpfDesign.Designer.ExpressionBlendInteractionAddon</RootNamespace>
