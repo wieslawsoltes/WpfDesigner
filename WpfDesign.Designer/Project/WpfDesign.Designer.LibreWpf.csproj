@@ -1,0 +1,31 @@
+<Project Sdk="LibreWPF.Sdk/0.1.0-preview.11">
+  <PropertyGroup>
+    <TargetFramework>$(ProGpuWpfSdkSampleTargetFramework)</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>ICSharpCode.WpfDesign.Designer</AssemblyName>
+    <RootNamespace>ICSharpCode.WpfDesign.Designer</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <Deterministic>false</Deterministic>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultPageItems>false</EnableDefaultPageItems>
+    <EnableDefaultResourceItems>false</EnableDefaultResourceItems>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\ICSharpCode.SharpDevelop.snk</AssemblyOriginatorKeyFile>
+    <DefineConstants>$(DefineConstants);LIBREWPF</DefineConstants>
+    <NoWarn>$(NoWarn);1591;CS1591;CS0618;SYSLIB0050;SYSLIB0051</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="**\*.cs" Exclude="bin\**;obj\**" />
+    <Compile Include="..\..\GlobalAssemblyInfo.cs" Link="GlobalAssemblyInfo.cs" />
+    <Page Include="**\*.xaml" Exclude="bin\**;obj\**" />
+    <Resource Include="Images\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\WpfDesign\Project\WpfDesign.LibreWpf.csproj" />
+    <ProjectReference Include="..\..\WpfDesign.XamlDom\Project\WpfDesign.XamlDom.LibreWpf.csproj" />
+  </ItemGroup>
+</Project>
