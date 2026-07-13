@@ -47,6 +47,56 @@ namespace ICSharpCode.WpfDesign
 		/// </summary>
 		void Deactivate(IDesignPanel designPanel);
 	}
+
+	/// <summary>
+	/// The pointer tool used to select and move items on a design panel.
+	/// </summary>
+	/// <remarks>
+	/// <see cref="TryStartGesture"/> is a typed input seam for hosts that cannot create a
+	/// trustworthy WPF <see cref="MouseButtonEventArgs"/> (for example, deterministic
+	/// integration tests or non-mouse input adapters). The normal routed mouse path uses
+	/// the same gesture implementation.
+	/// </remarks>
+	public interface IPointerTool : ITool
+	{
+		/// <summary>
+		/// Hit-tests <paramref name="designPanel"/> at <paramref name="pointerPosition"/>
+		/// and starts a pointer gesture for the hit design item.
+		/// </summary>
+		/// <returns>The active gesture, or <see langword="null"/> when no item was hit.</returns>
+		IPointerToolGesture TryStartGesture(
+			IDesignPanel designPanel,
+			Point pointerPosition,
+			int clickCount,
+			SelectionTypes selectionType);
+	}
+
+	/// <summary>
+	/// A typed pointer-tool gesture started on a real <see cref="IDesignPanel"/>.
+	/// </summary>
+	public interface IPointerToolGesture
+	{
+		/// <summary>Gets the item hit when the gesture started.</summary>
+		DesignItem HitItem { get; }
+
+		/// <summary>Gets whether the gesture can still be moved, completed, or canceled.</summary>
+		bool IsActive { get; }
+
+		/// <summary>Gets whether the gesture started and applied a placement move.</summary>
+		bool HasMoved { get; }
+
+		/// <summary>
+		/// Feeds a pointer position to the gesture.
+		/// </summary>
+		/// <returns><see langword="true"/> when a placement move was applied.</returns>
+		bool Move(Point pointerPosition);
+
+		/// <summary>Completes the gesture and commits any placement operation.</summary>
+		void Complete();
+
+		/// <summary>Cancels the gesture and aborts any placement operation.</summary>
+		void Cancel();
+	}
 	
 	/// <summary>
 	/// Service that manages tool selection.
