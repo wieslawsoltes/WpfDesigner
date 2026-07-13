@@ -17,6 +17,7 @@
 // DEALINGS IN THE SOFTWARE.
 
 using System;
+using System.Runtime.ExceptionServices;
 using System.Windows;
 using System.Windows.Input;
 using ICSharpCode.WpfDesign.Adorners;
@@ -205,7 +206,16 @@ namespace ICSharpCode.WpfDesign.Designer.Extensions
 			}
 
 			activeGesture = gesture;
-			ShowSizeAndHideHandles();
+			try {
+				ShowSizeAndHideHandles();
+			} catch (Exception startException) {
+				try {
+					gesture.Cancel();
+				} catch (Exception cancelException) {
+					throw new AggregateException(startException, cancelException);
+				}
+				throw;
+			}
 			return gesture;
 		}
 
@@ -258,6 +268,21 @@ namespace ICSharpCode.WpfDesign.Designer.Extensions
 				if (!isActive || !IsFinite(delta))
 					return false;
 
+				try {
+					Apply(delta, preserveAspectRatio);
+					return true;
+				} catch (Exception updateException) {
+					try {
+						Cancel();
+					} catch (Exception cancelException) {
+						throw new AggregateException(updateException, cancelException);
+					}
+					throw;
+				}
+			}
+
+			void Apply(Vector delta, bool preserveAspectRatio)
+			{
 				double dx = 0;
 				double dy = 0;
 				if (Alignment.Horizontal == HorizontalAlignment.Left)
@@ -288,6 +313,21 @@ namespace ICSharpCode.WpfDesign.Designer.Extensions
 					element != null ? element.MinHeight : 0,
 					element != null ? element.MaxHeight : double.PositiveInfinity);
 
+				if (operation.CurrentContainerBehavior is GridPlacementSupport) {
+					var horizontalAlignment = (HorizontalAlignment)owner.ExtendedItem.Properties[
+						FrameworkElement.HorizontalAlignmentProperty].ValueOnInstance;
+					var verticalAlignment = (VerticalAlignment)owner.ExtendedItem.Properties[
+						FrameworkElement.VerticalAlignmentProperty].ValueOnInstance;
+					if (horizontalAlignment == HorizontalAlignment.Stretch)
+						owner.ExtendedItem.Properties[FrameworkElement.WidthProperty].Reset();
+					else
+						owner.ExtendedItem.Properties[FrameworkElement.WidthProperty].SetValue(newWidth);
+					if (verticalAlignment == VerticalAlignment.Stretch)
+						owner.ExtendedItem.Properties[FrameworkElement.HeightProperty].Reset();
+					else
+						owner.ExtendedItem.Properties[FrameworkElement.HeightProperty].SetValue(newHeight);
+				}
+
 				PlacementInformation info = operation.PlacedItems[0];
 				Rect result = ResizeFromOriginalBounds(
 					info.OriginalBounds,
@@ -300,7 +340,6 @@ namespace ICSharpCode.WpfDesign.Designer.Extensions
 				info.Bounds = ConstrainBounds(info.Bounds, element, Alignment);
 				operation.CurrentContainerBehavior.SetPosition(info);
 				hasResized = hasResized || info.Bounds != info.OriginalBounds;
-				return true;
 			}
 
 			public void Complete()
@@ -308,11 +347,12 @@ namespace ICSharpCode.WpfDesign.Designer.Extensions
 				if (!isActive)
 					return;
 
-				Finish();
-				if (hasResized)
-					operation.Commit();
-				else
-					operation.Abort();
+				Finish(delegate {
+					if (hasResized)
+						operation.Commit();
+					else
+						operation.Abort();
+				});
 			}
 
 			public void Cancel()
@@ -320,14 +360,38 @@ namespace ICSharpCode.WpfDesign.Designer.Extensions
 				if (!isActive)
 					return;
 
-				Finish();
-				operation.Abort();
+				Finish(operation.Abort);
 			}
 
-			void Finish()
+			void Finish(Action finishOperation)
 			{
 				isActive = false;
-				owner.EndGesture(this);
+
+				Exception ownerException = null;
+				try {
+					// Detach the gesture before EndPlacement changes the selection and
+					// removes this extension. OnRemove must not recursively cancel the
+					// same placement operation.
+					owner.EndGesture(this);
+				} catch (Exception exception) {
+					ownerException = exception;
+				}
+
+				Exception operationException = null;
+				try {
+					// Always close the ChangeGroup, even when restoring the adorner UI
+					// failed. A leaked group breaks all later designer undo/redo.
+					finishOperation();
+				} catch (Exception exception) {
+					operationException = exception;
+				}
+
+				if (ownerException != null && operationException != null)
+					throw new AggregateException(ownerException, operationException);
+				if (ownerException != null)
+					ExceptionDispatchInfo.Capture(ownerException).Throw();
+				if (operationException != null)
+					ExceptionDispatchInfo.Capture(operationException).Throw();
 			}
 
 			static bool IsFinite(Vector vector)

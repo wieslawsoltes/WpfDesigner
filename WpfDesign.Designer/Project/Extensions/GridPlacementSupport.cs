@@ -248,8 +248,12 @@ namespace ICSharpCode.WpfDesign.Designer.Extensions
 				ha = SuggestHorizontalAlignment(info.Bounds, availableSpaceRect);
 				va = SuggestVerticalAlignment(info.Bounds, availableSpaceRect);
 			}
-			info.Item.Properties[FrameworkElement.HorizontalAlignmentProperty].SetValue(ha);
-			info.Item.Properties[FrameworkElement.VerticalAlignmentProperty].SetValue(va);
+			var horizontalAlignmentProperty = info.Item.Properties[FrameworkElement.HorizontalAlignmentProperty];
+			var verticalAlignmentProperty = info.Item.Properties[FrameworkElement.VerticalAlignmentProperty];
+			if ((HorizontalAlignment)horizontalAlignmentProperty.ValueOnInstance != ha)
+				horizontalAlignmentProperty.SetValue(ha);
+			if ((VerticalAlignment)verticalAlignmentProperty.ValueOnInstance != va)
+				verticalAlignmentProperty.SetValue(va);
 			
 			Thickness margin = new Thickness(0, 0, 0, 0);
 			if (ha == HorizontalAlignment.Left || ha == HorizontalAlignment.Stretch)
